@@ -1,0 +1,39 @@
+---
+- name: Download 7-Zip 
+  hosts: localhost  
+  become: yes
+  vars_files:
+    - vars.yml  # Load external vars file containing variables like seven_zip_url and seven_zip_archive
+
+  tasks:
+    - name: Ensure download directory exists
+      file:
+        path: "/tmp"
+        state: directory
+        mode: '0755'
+
+    - name: Download 7-Zip archive
+      block:
+        - name: Attempt to download 7-Zip archive
+          get_url:
+            url: "{{ seven_zip_url }}"
+            dest: "{{ seven_zip_archive }}"
+            mode: '0644'
+          register: result
+
+        - name: Display success message
+          debug:
+            msg: "7-Zip archive downloaded successfully to {{ seven_zip_archive }}"
+          when: result is succeeded
+
+      rescue:
+        - name: Handle download failure
+          debug:
+            msg: "⚠️ Failed to download 7-Zip archive. Please check the URL or network connection."
+
+      always:
+        - name: Cleanup archive on failure
+          file:
+            path: "{{ seven_zip_archive }}"
+            state: absent
+          when: result is failed
